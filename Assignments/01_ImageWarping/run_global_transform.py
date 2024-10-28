@@ -18,10 +18,68 @@ def apply_transform(image, scale, rotation, translation_x, translation_y, flip_h
     image = np.array(image_new)
     transformed_image = np.array(image)
 
+
     ### FILL: Apply Composition Transform 
     # Note: for scale and rotation, implement them around the center of the image （围绕图像中心进行放缩和旋转）
+    h=image.shape[0]
+    w=image.shape[1]
+
+    tmp_image=np.array(transformed_image)
+
+
+    center_x=w//2
+    center_y=h//2
+    #scale
+    for i in range(h):
+        for j in range(w):
+            pretransformed_i=(i-center_y)/scale+center_y #(1-1/scale)*center_y+(1/scale)*i
+            pretransformed_j=(j-center_x)/scale+center_x
+
+            pretransformed_i=int(pretransformed_i)
+            pretransformed_j=int(pretransformed_j)
+            if pretransformed_i>=0 and pretransformed_i<h and pretransformed_j>=0 and pretransformed_j<w:
+                transformed_image[i,j]=image[pretransformed_i,pretransformed_j]
+            else:
+                transformed_image[i,j]=np.array((255,255,255), dtype=np.uint8).reshape(1,1,3)
+    tmp_image=np.array(transformed_image)
+    #rotate
+    for i in range(h):
+        for j in range(w):
+            i_=h-i-1
+            j_=j
+
+            pretransformed_j=(j_-center_x)*np.cos(np.deg2rad(-rotation))-(i_-center_y)*np.sin(np.deg2rad(-rotation))+center_x
+            pretransformed_i=(j_-center_x)*np.sin(np.deg2rad(-rotation))+(i_-center_y)*np.cos(np.deg2rad(-rotation))+center_y
+            pretransformed_i=h-pretransformed_i-1
+            pretransformed_i=int(pretransformed_i)
+            pretransformed_j=int(pretransformed_j)
+            if pretransformed_i>=0 and pretransformed_i<h and pretransformed_j>=0 and pretransformed_j<w:
+                transformed_image[i,j]=tmp_image[pretransformed_i,pretransformed_j]
+            else:
+                transformed_image[i,j]=np.array((255,255,255), dtype=np.uint8).reshape(1,1,3)
+
+    tmp_image=np.array(transformed_image)
+
+    #translate
+    for i in range(h):
+        for j in range(w):
+            if i-translation_x>=0 and i-translation_x<h and j-translation_y>=0 and j-translation_y<w:
+                transformed_image[i,j]=tmp_image[i-translation_x,j-translation_y]
+            else:
+                transformed_image[i,j]=np.array((255,255,255), dtype=np.uint8).reshape(1,1,3)
+
+
+
+    tmp_image=np.array(transformed_image)
+    #flip horizontal
+    if flip_horizontal:
+        for j in range(w):
+            transformed_image[:,j]=tmp_image[:,w-j-1]
 
     return transformed_image
+
+
+
 
 # Gradio Interface
 def interactive_transform():

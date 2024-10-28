@@ -42,7 +42,7 @@ def record_points(evt: gr.SelectData):
 # 执行仿射变换
 
 def point_guided_deformation(image, source_pts, target_pts, alpha=1.0, eps=1e-8):
-    """ 
+    """
     Return
     ------
         A deformed image.
@@ -50,6 +50,41 @@ def point_guided_deformation(image, source_pts, target_pts, alpha=1.0, eps=1e-8)
     
     warped_image = np.array(image)
     ### FILL: 基于MLS or RBF 实现 image warping
+
+    #MLS
+    height=warped_image.shape[0]
+    width=warped_image.shape[1]
+    for y in range(height):
+        for x in range(width):
+            # 计算当前点与所有控制点的距离
+            dists = np.linalg.norm(source_pts - np.array([x, y]), axis=1)
+            # 计算权重
+            weights=1/(dists**(alpha*2)+eps)
+            # 计算加权平均目标点坐标
+            centroid_p=np.average(source_pts, axis=0, weights=weights)
+            centroid_q=np.average(target_pts, axis=0, weights=weights)
+
+            # 计算仿射变换矩阵
+            source_pts2=np.transpose(np.vstack([weights,weights]))*source_pts
+            A=np.matmul(np.transpose(source_pts2),source_pts)
+            B=np.matmul(np.transpose(source_pts2),target_pts)
+            M=np.matmul(np.linalg.inv(A),B)
+            
+           
+            before_warp=centroid_p+(np.array([x,y])-centroid_q)@np.linalg.inv(M)
+            before_warp=np.array(before_warp,dtype=int)
+           
+            if(before_warp[0]>=0 and before_warp[0]<width and before_warp[1]>=0 and before_warp[1]<height):
+                warped_image[y,x]=image[before_warp[1],before_warp[0]]
+
+            
+
+
+    
+
+  
+
+
 
     return warped_image
 
@@ -71,7 +106,7 @@ def clear_points():
 with gr.Blocks() as demo:
     with gr.Row():
         with gr.Column():
-            input_image = gr.Image(source="upload", label="上传图片", interactive=True, width=800, height=200)
+            input_image = gr.Image( label="上传图片", interactive=True, width=800, height=200)
             point_select = gr.Image(label="点击选择控制点和目标点", interactive=True, width=800, height=800)
             
         with gr.Column():
