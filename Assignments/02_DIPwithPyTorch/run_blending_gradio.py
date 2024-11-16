@@ -2,8 +2,10 @@ import gradio as gr
 from PIL import ImageDraw
 import numpy as np
 import torch
+import cv2
 
-# Initialize the polygon state
+# Initi
+# alize the polygon state
 def initialize_polygon():
     """
     Initializes the polygon state.
@@ -109,6 +111,8 @@ def create_mask_from_points(points, img_h, img_w):
     ### FILL: Obtain Mask from Polygon Points. 
     ### 0 indicates outside the Polygon.
     ### 255 indicates inside the Polygon.
+    
+    cv2.fillPoly(mask, [points], 255)
 
     return mask
 
@@ -129,6 +133,15 @@ def cal_laplacian_loss(foreground_img, foreground_mask, blended_img, background_
     loss = torch.tensor(0.0, device=foreground_img.device)
     ### FILL: Compute Laplacian Loss with https://pytorch.org/docs/stable/generated/torch.nn.functional.conv2d.html.
     ### Note: The loss is computed within the masks.
+
+    laplacian_kernel= torch.tensor([[0, 1, 0], [1, -4, 1], [0, 1, 0]], device=foreground_img.device)
+    laplacian_kernel=laplacian_kernel.unsqueeze_(0).unsqueeze_(0).repeat(1, 3, 1, 1).float()
+    foreground_img = torch.nn.functional.conv2d(foreground_img, laplacian_kernel, padding=1)
+    blended_img = torch.nn.functional.conv2d(blended_img, laplacian_kernel, padding=1)
+    loss = torch.mean(torch.abs(foreground_img * foreground_mask - blended_img * background_mask))
+
+
+
 
     return loss
 
@@ -172,7 +185,7 @@ def blending(foreground_image_original, background_image_original, dx, dy, polyg
     # Initialize blended image
     blended_img = bg_img_tensor.clone()
     mask_expanded = bg_mask_tensor.bool().expand(-1, 3, -1, -1)
-    blended_img[mask_expanded] = blended_img[mask_expanded] * 0.9 + fg_img_tensor[fg_mask_tensor.bool().expand(-1, 3, -1, -1)] * 0.1
+    
     blended_img.requires_grad = True
 
     # Set up optimizer
@@ -203,7 +216,7 @@ def blending(foreground_image_original, background_image_original, dx, dy, polyg
 # Helper function to close the polygon and reset dx
 def close_polygon_and_reset_dx(img_original, polygon_state, dx, dy, background_image_original):
     """
-    Closes the polygon, resets dx to 0, and updates the background image.
+    Closes the polygon, resets dx to 0, and updates t he background image.
 
     Args:
         img_original (PIL.Image): The original image.
@@ -358,6 +371,9 @@ with gr.Blocks(title="Poisson Image Blending", css="""
         inputs=[foreground_image_original, background_image_original, dx, dy, polygon_state],
         outputs=output_image,
     )
+
+
+
 
 # Launch the Gradio app
 demo.launch()

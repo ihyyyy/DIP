@@ -9,6 +9,7 @@ from facades_dataset import FacadesDataset
 from FCN_network import FullyConvNetwork
 from torch.optim.lr_scheduler import StepLR
 
+
 def tensor_to_image(tensor):
     """
     Convert a PyTorch tensor to a NumPy array suitable for OpenCV.
@@ -29,13 +30,16 @@ def tensor_to_image(tensor):
     image = (image * 255).astype(np.uint8)
     return image
 
+
 def save_images(inputs, targets, outputs, folder_name, epoch, num_images=5):
     """
     Save a set of input, target, and output images for visualization.
 
     Args:
         inputs (torch.Tensor): Batch of input images.
-        targets (torch.Tensor): Batch of target images.
+        targets (torch.Tensor): Batch of target images.、
+        
+        
         outputs (torch.Tensor): Batch of output images from the model.
         folder_name (str): Directory to save the images ('train_results' or 'val_results').
         epoch (int): Current epoch number.
