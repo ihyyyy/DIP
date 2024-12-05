@@ -5,3 +5,5 @@ train_list.txt
 val_list.txt
 
 model.py
+
+state.pkl
