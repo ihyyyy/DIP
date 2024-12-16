@@ -112,7 +112,9 @@ class GaussianModel(nn.Module):
         # Compute covariance
         ### FILL:
         ### Covs3d = ...
-        
+        Covs3d = torch.bmm(R, S)  # 计算 R * S
+        Covs3d = torch.bmm(Covs3d, S.transpose(1, 2))  # 结合 S 的转置
+        Covs3d = torch.bmm(Covs3d, R.transpose(1, 2))  # 结合 R 的转置    
         return Covs3d
 
     def get_gaussian_params(self) -> GaussianParameters:
