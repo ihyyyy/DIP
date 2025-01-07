@@ -34,7 +34,7 @@ gaussian = (1. / (2 * torch.pi * det_covs.sqrt())).unsqueeze(-1).unsqueeze(-1) *
 T = torch.cumprod(torch.cat([torch.ones(1, self.H, self.W, device=alphas.device), 1 - alphas[:-1]], dim=0), dim=0)
 weights = alphas * T
 ```
-### result 结果
+### 结果
 ![epoch 70](./Assignments/04_3DGS/data/chair/checkpoints/debug_images/epoch_0070/r_2.png)
 
 
@@ -49,6 +49,7 @@ GAN:
 
 U-net:
 
+/TBD
 
 **dragGAN**
 
@@ -63,7 +64,7 @@ python make_it_smile.py
 ### 结果
 
 **pix2pix**
-
+/TBD
 
 **dragGAN**
 
@@ -225,7 +226,11 @@ self.convT8=nn.Sequential(
 
 **global transformation**
 
+/TBD
+
 **point transformation**
+
+/TBD
 
 ### 结果
 
