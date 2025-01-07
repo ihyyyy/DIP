@@ -1,10 +1,10 @@
-# Course Materials for DIP (Digital Image Processing)
+# reports of assignment01~04 for DIP (Digital Image Processing)
 
-## requirement 要求
 
-## Assignment 04 
 
-### 代码
+## Assignment04
+
+### 原理&代码
 ```
 
 #compute jacobian
@@ -38,57 +38,217 @@ weights = alphas * T
 ![epoch 70](./Assignments/04_3DGS/data/chair/checkpoints/debug_images/epoch_0070/r_2.png)
 
 
-## Assignment 03  
+## Assignment03
 
-### 运行
-![](./Assignments/03_PlayWithGANs/02/ycz.jpg)
+### 原理&代码
+**pix2pix**
+
+通用的image to image translation框架
+
+GAN:
+
+U-net:
+
+
+**dragGAN**
+
+依次运行
 ```
 python invert.py
-```
-![](./Assignments/03_PlayWithGANs/02/project.png)
-```
 python landmark_dect.py
+python make_it_smile.py
 ```
 
+
+### 结果
+
+**pix2pix**
+
+
+**dragGAN**
+
+输入-中间输出-输出
+
+<p align="center">
+  <img src="./Assignments/03_PlayWithGANs/02/ycz.jpg" width="30%" />
+  <img src="./Assignments/03_PlayWithGANs/02/project.png" width="30%" />
+  <img src="./Assignments/03_PlayWithGANs/02/smile_face.jpg" width="30%" />
+</p>
+
+
+
+
+
+
+## Assignment02 
+### 原理&代码
+
+**泊松融合**
+
+
+Create a binary mask from polygon points
 ```
-make_it_smile.py
+#扫描线算法
+
+```
+Calculate the Laplacian loss between the foreground and blended image
+
+```
+laplacian_kernel= torch.tensor([[0, 1, 0], [1, -4, 1], [0, 1, 0]], device=foreground_img.device)
+laplacian_kernel=laplacian_kernel.unsqueeze_(0).unsqueeze_(0).repeat(3, 3, 1, 1).float()
+
+#在前景和背景上做一次卷积``
+foreground_img = torch.nn.functional.conv2d(foreground_img, laplacian_kernel, padding=1)
+blended_img = torch.nn.functional.conv2d(blended_img, laplacian_kernel, padding=1)
+
+(foreground_minx,foreground_miny),(foreground_maxx,foreground_maxy)=get_mask_bounds(foreground_mask)
+(background_minx,background_miny),(background_maxx,background_maxy)=get_mask_bounds(background_mask)
+
+
+diff_fore=foreground_img[:,:,foreground_miny:foreground_maxy+1,foreground_minx:foreground_maxx+1] * foreground_mask[:,:,foreground_miny:foreground_maxy+1,foreground_minx:foreground_maxx+1]
+diff_back=blended_img[:,:,background_miny:background_maxy+1,background_minx:background_maxx+1] * background_mask[:,:,background_miny:background_maxy+1,background_minx:background_maxx+1]
+loss = torch.sum(torch.abs(diff_fore - diff_back))
 ```
 
-![](./Assignments/03_PlayWithGANs/02/smile_face.jpg)
+
+**pix2pix**
+
+FCN - Fully Convolutional Network
+
+```
+self.conv1 = nn.Sequential(
+    nn.Conv2d(3, 8, kernel_size=4, stride=2, padding=1),  # Input channels: 3, Output channels: 8
+    nn.BatchNorm2d(8),
+    nn.ReLU(inplace=True)
+)
+self.conv2=nn.Sequential(
+    nn.Conv2d(8, 64, kernel_size=4, stride=2, padding=1),  # Input channels: 8, Output channels: 64
+    nn.BatchNorm2d(64),
+    nn.ReLU(inplace=True)
+)
+self.conv3=nn.Sequential(
+    nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),  # Input channels: 64, Output channels: 128
+    nn.BatchNorm2d(128),
+    nn.ReLU(inplace=True)
+)
+self.conv4=nn.Sequential(
+    nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),  # Input channels: 128, Output channels: 256
+    nn.BatchNorm2d(256),
+    nn.ReLU(inplace=True)
+)
+self.conv5=nn.Sequential(
+    nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1),  # Input channels: 256, Output channels: 512
+    nn.BatchNorm2d(512),
+    nn.ReLU(inplace=True)
+)
+self.conv6=nn.Sequential(
+    nn.Conv2d(512, 1024, kernel_size=4, stride=2, padding=1),  # Input channels: 512, Output channels: 1024
+    nn.BatchNorm2d(1024),
+    nn.ReLU(inplace=True)
+)
+self.conv7=nn.Sequential(
+    nn.Conv2d(1024, 2048, kernel_size=4, stride=2, padding=1),  # Input channels: 1024, Output channels: 2048
+    nn.BatchNorm2d(2048),
+    nn.ReLU(inplace=True)
+)
+self.conv8=nn.Sequential(
+    nn.Conv2d(2048, 4096, kernel_size=4, stride=2, padding=1),  # Input channels: 2048, Output channels: 4096
+    nn.BatchNorm2d(4096),
+    nn.ReLU(inplace=True)
+)
+# Decoder (Deconvolutional Layers)
+
+self.convT1=nn.Sequential(
+    nn.ConvTranspose2d(4096, 2048, 2, stride=2, padding=0),
+    nn.ReLU(inplace=True)
+)
+
+self.convT2=nn.Sequential(
+    nn.ConvTranspose2d(2048, 1024, 2, stride=2, padding=0),
+    nn.ReLU(inplace=True)
+)
+
+self.convT3=nn.Sequential(
+    nn.ConvTranspose2d(1024, 512, 2, stride=2, padding=0),
+    nn.ReLU(inplace=True)
+)
+self.convT4=nn.Sequential(
+    nn.ConvTranspose2d(512, 256, 2, stride=2, padding=0),
+    nn.ReLU(inplace=True)
+)
+self.convT5=nn.Sequential(
+    nn.ConvTranspose2d(256, 128, 2, stride=2, padding=0),
+    nn.ReLU(inplace=True)
+)
+self.convT6=nn.Sequential(
+    nn.ConvTranspose2d(128, 64, 2, stride=2, padding=0),
+    nn.ReLU(inplace=True)
+)
+self.convT7=nn.Sequential(
+    nn.ConvTranspose2d(64, 8, 2, stride=2, padding=0),
+    nn.ReLU(inplace=True)
+)
+self.convT8=nn.Sequential(
+    nn.ConvTranspose2d(8, 3, 2, stride=2, padding=0),
+    nn.Tanh()
+)
+
+```
 
 
-### result 结果
+### 结果
+**泊松融合**
 
+等式-蒙娜丽莎-鲨鱼
 
-
-## Assignment 02 
-
-### result 结果
-
-
-
-## Assignment 01 
-
-
-### result 结果
+<p align="center">
+  <img src="./resources/euquation.png" width="30%" />
+  <img src="./resources/monolisa.png" width="30%" />
+  <img src="./resources/water.png" width="30%" />
+</p>
 
 
 
 
 
-### [上课课件（持续更新）](https://rec.ustc.edu.cn/share/705bfa50-6e53-11ef-b955-bb76c0fede49) 
+**pix2pix**
+<p align="center">
+  <img src="./resources/result_4.png" width="50%" />
+  <img src="./resources/result_5.png" width="50%" />
+</p>
 
 
-### 编程入门资料
-不用花很多时间专门学习，在课程作业或科研项目过程中一边学一边善用搜索即可
+## Assignment01 
+
+
+### 原理&代码
+
+**global transformation**
+
+**point transformation**
+
+### 结果
+
+**global transformation**
+
+![](./resources/ass1_1.png)
+
+**point transformation**
+
+<p align="center">
+  <img src="./resources/ass1_2.png" width="50%" />
+  <img src="./resources/ass1_3.png" width="50%" />
+</p>
+
+
+---
+
+
+## 编程入门资料
+
 - [Python 入门](https://github.com/walter201230/Python)
 - [OpenCV Docs](https://codec.wang/docs/opencv)
 - [PyTorch 入门](https://github.com/datawhalechina/thorough-pytorch)
-
-### 课程作业
-- 作业会更新在[Assignments](Assignments/)文件夹
 - [作业提交模板](https://github.com/paperswithcode/releasing-research-code/blob/master/templates/README.md)
-- [Assignment_01](Assignments/01_ImageWarping) (Due: 2024.10.01)
-- [Assignment_02](Assignments/02_DIPwithPyTorch/) (Due: 2024.10.31)
-- [Assignment_03](Assignments/03_PlayWithGANs/) (Due: 2024.11.30)
-- [Assignment_04](Assignments/04_3DGS/) (Due: 2025.01.06)
+- [上课课件](https://rec.ustc.edu.cn/share/705bfa50-6e53-11ef-b955-bb76c0fede49) 
+

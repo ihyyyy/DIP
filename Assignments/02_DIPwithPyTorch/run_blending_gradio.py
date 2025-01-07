@@ -116,6 +116,34 @@ def create_mask_from_points(points, img_h, img_w):
 
     return mask
 
+
+def get_mask_bounds(mask):
+    """
+    获取二值化张量中值为1的最小和最大x、y坐标。
+
+    Args:
+        mask (torch.Tensor): 二值化的PyTorch张量，形状为 (1,1,H,W)。
+
+    Returns:
+        tuple: 最小坐标 (min_x, min_y) 和最大坐标 (max_x, max_y)。
+    """
+    # 获取值为1的索引
+    indices = torch.nonzero(mask, as_tuple=False)  # 返回形状为 (n, 2) 的张量，其中每行是 (y, x)
+    
+    if indices.numel() == 0:
+        # 如果没有值为1的元素，返回None
+        return None, None
+
+    # 分离y和x坐标
+    y_coords, x_coords = indices[:, 2], indices[:, 3]
+
+    # 找到最小和最大值
+    min_y, max_y = y_coords.min().item(), y_coords.max().item()
+    min_x, max_x = x_coords.min().item(), x_coords.max().item()
+
+    return (min_x, min_y), (max_x, max_y)
+
+
 # Calculate the Laplacian loss between the foreground and blended image
 def cal_laplacian_loss(foreground_img, foreground_mask, blended_img, background_mask):
     """
@@ -135,11 +163,19 @@ def cal_laplacian_loss(foreground_img, foreground_mask, blended_img, background_
     ### Note: The loss is computed within the masks.
 
     laplacian_kernel= torch.tensor([[0, 1, 0], [1, -4, 1], [0, 1, 0]], device=foreground_img.device)
-    laplacian_kernel=laplacian_kernel.unsqueeze_(0).unsqueeze_(0).repeat(1, 3, 1, 1).float()
+    laplacian_kernel=laplacian_kernel.unsqueeze_(0).unsqueeze_(0).repeat(3, 3, 1, 1).float()
+    
+    #在前景和背景上做一次卷积``
     foreground_img = torch.nn.functional.conv2d(foreground_img, laplacian_kernel, padding=1)
     blended_img = torch.nn.functional.conv2d(blended_img, laplacian_kernel, padding=1)
-    loss = torch.mean(torch.abs(foreground_img * foreground_mask - blended_img * background_mask))
+    
+    (foreground_minx,foreground_miny),(foreground_maxx,foreground_maxy)=get_mask_bounds(foreground_mask)
+    (background_minx,background_miny),(background_maxx,background_maxy)=get_mask_bounds(background_mask)
 
+
+    diff_fore=foreground_img[:,:,foreground_miny:foreground_maxy+1,foreground_minx:foreground_maxx+1] * foreground_mask[:,:,foreground_miny:foreground_maxy+1,foreground_minx:foreground_maxx+1]
+    diff_back=blended_img[:,:,background_miny:background_maxy+1,background_minx:background_maxx+1] * background_mask[:,:,background_miny:background_maxy+1,background_minx:background_maxx+1]
+    loss = torch.sum(torch.abs(diff_fore - diff_back))
 
 
 
@@ -189,7 +225,7 @@ def blending(foreground_image_original, background_image_original, dx, dy, polyg
     blended_img.requires_grad = True
 
     # Set up optimizer
-    optimizer = torch.optim.Adam([blended_img], lr=1e-3)
+    optimizer = torch.optim.Adam([blended_img], lr=1e-2)
 
     # Optimization loop
     iter_num = 10000
@@ -205,8 +241,11 @@ def blending(foreground_image_original, background_image_original, dx, dy, polyg
         if step % 50 == 0:
             print(f'Optimize step: {step}, Laplacian distance loss: {loss.item()}')
 
-        if step == (iter_num // 2): ### decrease learning rate at the half step
+        if step == (iter_num // 3): ### decrease learning rate at the half step
             optimizer.param_groups[0]['lr'] *= 0.1
+        if step == (iter_num // 3 *2): ### decrease learning rate at the half step
+            optimizer.param_groups[0]['lr'] *= 0.1
+
 
     # Convert result back to numpy array
     result = torch.clamp(blended_img.detach(), 0, 1).cpu().permute(0, 2, 3, 1).squeeze().numpy() * 255

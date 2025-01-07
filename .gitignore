@@ -8,4 +8,7 @@ state.pkl
 sparse/
 projections/
 database.db
-
+train_results/
+val_results/
+checkpoints/
+epoch_*/

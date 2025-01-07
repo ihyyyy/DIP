@@ -37,7 +37,7 @@ def save_images(inputs, targets, outputs, folder_name, epoch, num_images=5):
 
     Args:
         inputs (torch.Tensor): Batch of input images.
-        targets (torch.Tensor): Batch of target images.、
+        targets (torch.Tensor): Batch of target images.
         
         
         outputs (torch.Tensor): Batch of output images from the model.
@@ -86,7 +86,7 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, epoch, num_
         outputs = model(image_rgb)
 
         # Save sample images every 5 epochs
-        if epoch % 5 == 0 and i == 0:
+        if epoch % 100 == 0 and i == 0:
             save_images(image_rgb, image_semantic, outputs, 'train_results', epoch)
 
         # Compute the loss
@@ -131,7 +131,7 @@ def validate(model, dataloader, criterion, device, epoch, num_epochs):
             val_loss += loss.item()
 
             # Save sample images every 5 epochs
-            if epoch % 5 == 0 and i == 0:
+            if epoch % 100 == 0 and i == 0:
                 save_images(image_rgb, image_semantic, outputs, 'val_results', epoch)
 
     # Calculate average validation loss
@@ -144,6 +144,7 @@ def main():
     """
     # Set device to GPU if available
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device: {device}')
 
     # Initialize datasets and dataloaders
     train_dataset = FacadesDataset(list_file='train_list.txt')
@@ -161,10 +162,11 @@ def main():
     scheduler = StepLR(optimizer, step_size=200, gamma=0.2)
 
     # Training loop
-    num_epochs = 800
+    num_epochs = 200
     for epoch in range(num_epochs):
         train_one_epoch(model, train_loader, optimizer, criterion, device, epoch, num_epochs)
-        validate(model, val_loader, criterion, device, epoch, num_epochs)
+        if epoch % 50 == 0:
+            validate(model, val_loader, criterion, device, epoch, num_epochs)
 
         # Step the scheduler after each epoch
         scheduler.step()
